@@ -1,0 +1,29 @@
+{{#if video.length}}
+    {{#each video}}
+        <div class="col-sm-6 col-md-4 videoPanel">
+            <div class="thumbnail">
+            <div class="videoHeader">
+                <img src="/img/redLogo.png"/>
+                <span class="modTitle">Moderator: </span><span>{{{name}}}</span>
+            </div>
+            <div class="videoTime">
+                <span>{{createTime}}</span>
+            </div>
+            <div class="caption">
+                <form id="recordingForm{{@index}}"  method='post' target="_blank">
+                    <input type="hidden" name="videoID" value='{{{id}}}'/>
+                    <input type="submit" class="playButton" value=""/>
+                    <a id="link{{{id}}}" hidden="true" download>download</a>
+                    <input onclick="document.getElementById('link{{{id}}}').href='http://' + window.location.hostname + ':80/video/{{{id}}}.mp4';
+                    document.getElementById('link{{{id}}}').click();
+                    document.getElementById('link{{{id}}}').href=''"  class="downloadButton" value=""/>
+                </form>
+            </div>
+        </div>
+        </div>
+    {{/each}}
+    {{else}}
+    <div class="recordingMessage">
+        <span id="recordingMsg">No meeting recorded</span>
+    </div>
+{{/if}}

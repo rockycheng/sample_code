@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+						   xmlns:s="library://ns.adobe.com/flex/spark"
+						   open="onOpen()"
+						   close="onClose()">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+
+			import controller.AppSetting;
+			import util.LogUtil;
+
+			//New appSetting make sure use same object
+			private var appSetting:AppSetting = AppSetting.getInstance();
+
+			private var settingProtocol:String = null;
+			private var sipAddress:String = "";
+
+			private function onOpen():void
+			{
+				LogUtil.debug("onOpen , OPEN the settingServer PopUp", this.className.toString());
+				//Loading Data
+				appSetting.loadLocalSettingData();
+				showSettingData();
+			}
+
+			private function onClose():void
+			{
+				LogUtil.debug("onClose , CLOSE the settingServer PopUp", this.className.toString());
+			}
+
+			private function showSettingData():void
+			{
+				LogUtil.debug("Have Users ever been changed the SETTING ??????? " + appSetting.changed.toString(), this.className.toString());
+
+				//If changed , show the Setting Data
+				if (appSetting.changed)
+				{
+					LogUtil.debug("#########" + appSetting.changed.toString() + " ####### What!? you did it !!!! what the f.....", this.className.toString());
+					//which protocol
+					setProtocol(appSetting.protocol);
+					//contact list server
+					contactServer.text = appSetting.contactlist;
+					//realtime server
+					realtimeServer.text = appSetting.realtime;
+					//host and RTMP server
+					meetServer.text = appSetting.meet;
+					//SIP server always show customer setup
+					var sproductionServer:Array = appSetting.productionServer(contactServer.text, realtimeServer.text, meetServer.text, appSetting.sip);
+					if (sproductionServer[0] == "true" && sproductionServer[1] == "false")
+					{
+						sipAddress = appSetting.sip;
+						sipServer.text = "";
+					}
+					else
+					{
+						sipServer.text = appSetting.sip;
+					}
+					//assign Data to mobile App
+					appSetting.changeServerIP();
+				}
+				else
+				{
+					LogUtil.debug("#########" + appSetting.changed.toString() + " ####### good job , I know your are good guy !", this.className.toString());
+					//use split to cut AUTH_SERVER URL
+					var contactServer_array:Array = appSetting.loadAppConfigURL(appSetting.LOAD_AUTH_SERVER_URL);
+					//which procotol
+					if (contactServer_array[0] == "http")
+					{
+						setProtocol("HTTP");
+					}
+					else
+					{
+						setProtocol("HTTPS");
+					}
+					//contact list server , just show IP address
+					contactServer.text = contactServer_array[1];
+
+					//SIP server always "" , sipAddress for temp data.
+					var sipServer_array:Array = appSetting.loadAppConfigURL(appSetting.LOAD_SIP_SERVER_URL);
+					sipAddress = sipServer_array[0];
+					sipServer.text = "";
+
+					//realtime server ,just show IP address
+					var realtimeServer_array:Array = appSetting.loadAppConfigURL(appSetting.LOAD_REALTIME_SERVER_URL);
+					realtimeServer.text = realtimeServer_array[1];
+					//meet and rtmp server
+					var hostAndRtmpServer_array:Array = appSetting.loadAppConfigURL(appSetting.LOAD_HOST_AND_RTMPSERVER_URL);
+					meetServer.text = hostAndRtmpServer_array[0];
+				}
+			}
+
+			private function setProtocol(data:String):void
+			{
+				LogUtil.debug("setProtocol" + data, this.className.toString());
+				if (data == "HTTP")
+				{
+					httpColor.color = 0x000000;
+					httpsColor.color = 0xFFFFFF;
+				}
+				else
+				{
+					httpColor.color = 0xFFFFFF;
+					httpsColor.color = 0x000000;
+				}
+
+				settingProtocol = data;
+
+			}
+
+			private function contactServer_enterHandler(event:FlexEvent):void
+			{
+				stage.focus = null;
+				contactServer.setFocus();
+			}
+
+			private function realtimeServer_enterHandler(event:FlexEvent):void
+			{
+				stage.focus = null;
+				realtimeServer.setFocus();
+			}
+
+			private function meetServer_enterHandler(event:FlexEvent):void
+			{
+				stage.focus = null;
+				meetServer.setFocus();
+			}
+
+			protected function sipServer_enterHandler(event:FlexEvent):void
+			{
+				stage.focus = null;
+				sipServer.setFocus();
+			}
+
+			private function saveServerData():void
+			{
+				LogUtil.debug("Save Server Data", this.className.toString());
+				// Set every value to appSetting value 
+				appSetting.changed = true;
+				appSetting.protocol = settingProtocol;
+				appSetting.contactlist = contactServer.text;
+				appSetting.realtime = realtimeServer.text;
+				appSetting.meet = meetServer.text;
+				var productionServer:Array = appSetting.productionServer(contactServer.text, realtimeServer.text, meetServer.text, sipServer.text);
+				if (productionServer[0] == "true" && productionServer[1] == "false")
+				{
+					appSetting.sip = sipAddress;
+				}
+				else if (productionServer[0] == "true" && productionServer[1] != "false")
+				{
+					appSetting.sip = productionServer[1];
+				}
+				else
+				{
+					appSetting.sip = sipServer.text;
+				}
+				appSetting.saveSettingDataToLocal();
+				//assign Data to mobile App
+				appSetting.changeServerIP();
+				//close popUp windows
+				this.close();
+			}
+		]]>
+	</fx:Script>
+
+	<!-- Layout Design -->
+	<s:Group id="setServerGroup"
+			 width="100%"
+			 height="100%">
+		<s:Rect width="100%"
+				height="100%"
+				radiusX="5"
+				radiusY="5">
+			<s:fill>
+				<s:SolidColor color="0xF7F7F7"/>
+			</s:fill>
+		</s:Rect>
+		<s:VGroup width="100%"
+				  height="100%"
+				  paddingBottom="15"
+				  paddingLeft="15"
+				  paddingRight="15"
+				  paddingTop="15"
+				  verticalAlign="middle">
+			<s:Label styleName="customStyleForWarning"
+					 id="setServerTitle"
+					 width="100%"
+					 color="0x000000"
+					 paddingBottom="15"
+					 paddingTop="15"
+					 text="Server Setting"
+					 textAlign="center"
+					 verticalAlign="middle"/>
+
+			<s:VGroup width="100%"
+					  height="80%"
+					  gap="10"
+					  verticalAlign="middle">
+
+				<s:VGroup width="100%"
+						  height="10%"
+						  gap="10">
+					<s:Label styleName="customStyle"
+							 text="1. Select network protocol"
+							 width="100%"/>
+					<s:HGroup width="100%"
+							  height="20%"
+							  paddingLeft="40">
+						<s:HGroup height="100%">
+							<s:Group height="100%"
+									 id="radioBtn"
+									 click="setProtocol('HTTP')">
+								<s:Ellipse width="{radioBtn.height}"
+										   height="{radioBtn.height}">
+									<s:fill>
+										<s:SolidColor color="#ffffff"/>
+									</s:fill>
+								</s:Ellipse>
+								<s:HGroup id="inside"
+										  width="{radioBtn.height / 3}"
+										  height="{radioBtn.height / 3}"
+										  x="{radioBtn.width / 2 - inside.width / 2}"
+										  y="{radioBtn.height / 2 - inside.height / 2}">
+									<s:Ellipse width="100%"
+											   height="100%">
+										<s:fill>
+											<s:SolidColor id="httpColor"
+														  color="0x000000"/>
+										</s:fill>
+									</s:Ellipse>
+								</s:HGroup>
+							</s:Group>
+							<s:Label styleName="customStyle"
+									 id="http"
+									 text="HTTP"
+									 click="setProtocol('HTTP')"/>
+						</s:HGroup>
+						<s:Spacer width="15%"/>
+						<s:HGroup height="20%">
+							<s:Group height="100%"
+									 id="radioBtn2"
+									 click="setProtocol('HTTPS')">
+								<s:Ellipse width="{radioBtn2.height}"
+										   height="{radioBtn2.height}">
+									<s:fill>
+										<s:SolidColor color="#ffffff"/>
+									</s:fill>
+								</s:Ellipse>
+								<s:HGroup id="inside2"
+										  width="{radioBtn2.height / 3}"
+										  height="{radioBtn2.height / 3}"
+										  x="{radioBtn2.width / 2 - inside2.width / 2}"
+										  y="{radioBtn2.height / 2 - inside2.height / 2}">
+									<s:Ellipse width="100%"
+											   height="100%">
+										<s:fill>
+											<s:SolidColor id="httpsColor"
+														  color="0xFFFFFF"/>
+										</s:fill>
+									</s:Ellipse>
+								</s:HGroup>
+							</s:Group>
+							<s:Label styleName="customStyle"
+									 id="https"
+									 text="HTTPS"
+									 click="setProtocol('HTTPS')"/>
+						</s:HGroup>
+					</s:HGroup>
+				</s:VGroup>
+
+				<s:VGroup width="100%"
+						  height="30%"
+						  horizontalAlign="center">
+					<s:Label styleName="customStyle"
+							 width="100%"
+							 text="2. Input Contact List Server"/>
+					<s:VGroup width="92%"
+							  height="100%"
+							  horizontalAlign="left">
+						<s:Group width="100%"
+								 height="80%">
+							<s:Rect width="100%"
+									height="100%"
+									radiusX="10"
+									radiusY="10"
+									bottom="-1">
+								<s:stroke>
+									<s:SolidColorStroke color="#8d8d92"/>
+								</s:stroke>
+								<s:fill>
+									<s:SolidColor color="0xFFFFFF"/>
+								</s:fill>
+							</s:Rect>
+							<s:TextInput id="contactServer"
+										 width="100%"
+										 height="100%"
+										 borderVisible="false"
+										 focusAlpha="0"
+										 contentBackgroundAlpha="0"
+										 prompt=""
+										 returnKeyLabel="next"
+										 softKeyboardType="url"
+										 enter="contactServer_enterHandler(event)"/>
+						</s:Group>
+					</s:VGroup>
+				</s:VGroup>
+
+				<s:VGroup width="100%"
+						  height="30%"
+						  horizontalAlign="center">
+					<s:Label styleName="customStyle"
+							 width="100%"
+							 text="3. Input Realtime Server"/>
+					<s:VGroup width="92%"
+							  height="100%"
+							  horizontalAlign="left">
+						<s:Group width="100%"
+								 height="80%">
+							<s:Rect width="100%"
+									height="100%"
+									radiusX="10"
+									radiusY="10"
+									bottom="-1">
+								<s:stroke>
+									<s:SolidColorStroke color="#8d8d92"/>
+								</s:stroke>
+								<s:fill>
+									<s:SolidColor color="0xFFFFFF"/>
+								</s:fill>
+							</s:Rect>
+							<s:TextInput id="realtimeServer"
+										 width="100%"
+										 height="100%"
+										 borderVisible="false"
+										 focusAlpha="0"
+										 contentBackgroundAlpha="0"
+										 prompt=""
+										 returnKeyLabel="next"
+										 softKeyboardType="url"
+										 enter="realtimeServer_enterHandler(event)"/>
+						</s:Group>
+					</s:VGroup>
+				</s:VGroup>
+
+				<s:VGroup width="100%"
+						  height="30%"
+						  horizontalAlign="center">
+					<s:Label styleName="customStyle"
+							 width="100%"
+							 text="4. Input Meet Server"/>
+					<s:VGroup width="92%"
+							  height="100%"
+							  horizontalAlign="left">
+						<s:Group width="100%"
+								 height="80%">
+							<s:Rect width="100%"
+									height="100%"
+									radiusX="10"
+									radiusY="10"
+									bottom="-1">
+								<s:stroke>
+									<s:SolidColorStroke color="#8d8d92"/>
+								</s:stroke>
+								<s:fill>
+									<s:SolidColor color="0xFFFFFF"/>
+								</s:fill>
+							</s:Rect>
+							<s:TextInput id="meetServer"
+										 width="100%"
+										 height="100%"
+										 borderVisible="false"
+										 focusAlpha="0"
+										 contentBackgroundAlpha="0"
+										 prompt=""
+										 returnKeyLabel="done"
+										 softKeyboardType="url"
+										 enter="meetServer_enterHandler(event)"/>
+						</s:Group>
+					</s:VGroup>
+				</s:VGroup>
+
+				<s:VGroup id="sipSetup"
+						  width="100%"
+						  height="30%"
+						  enabled="true"
+						  horizontalAlign="center">
+					<s:Label styleName="customStyle"
+							 width="100%"
+							 text="5. Input SIP Server"/>
+					<s:VGroup width="92%"
+							  height="100%"
+							  horizontalAlign="left">
+						<s:Group width="100%"
+								 height="80%">
+							<s:Rect width="100%"
+									height="100%"
+									radiusX="10"
+									radiusY="10"
+									bottom="-1">
+								<s:stroke>
+									<s:SolidColorStroke color="#8d8d92"/>
+								</s:stroke>
+								<s:fill>
+									<s:SolidColor color="0xFFFFFF"/>
+								</s:fill>
+							</s:Rect>
+							<s:TextInput id="sipServer"
+										 width="100%"
+										 height="100%"
+										 borderVisible="false"
+										 focusAlpha="0"
+										 contentBackgroundAlpha="0"
+										 prompt="enter SIP server ip"
+										 returnKeyLabel="done"
+										 softKeyboardType="url"
+										 enter="sipServer_enterHandler(event)"/>
+						</s:Group>
+					</s:VGroup>
+				</s:VGroup>
+
+			</s:VGroup>
+
+			<s:HGroup width="100%"
+					  height="13%">
+				<s:Button styleName="customStyleForButton"
+						  id="btnCancelSet"
+						  width="50%"
+						  height="100%"
+						  label="Cancel"
+						  click="this.close()"
+						  skinClass="skin.SettingCancelBtnSkin"/>
+				<s:Button styleName="customStyleForButton"
+						  id="btnSaveSet"
+						  width="50%"
+						  height="100%"
+						  label="Save"
+						  skinClass="skin.SettingSaveBtnSkin"
+						  click="saveServerData()"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:Group>
+</s:SkinnablePopUpContainer>
